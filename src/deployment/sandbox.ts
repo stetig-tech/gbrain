@@ -1,5 +1,6 @@
 import { Drive, Sandbox } from '@vercel/sandbox';
 import { requiredEnv } from './config.ts';
+import { tagSandbox } from './error-log.ts';
 import { BUN_BIN, RELEASE_MANIFEST, assertReleaseManifest, expectedReleaseSha, releaseDir } from './release.ts';
 
 export function sandboxImage(): string {
@@ -14,7 +15,7 @@ export async function withPublisherSandbox<T>(run: (sandbox: Sandbox) => Promise
     image: sandboxImage(), region: drive.region, persistent: false, timeout: 270_000,
     resources: { vcpus: 2 }, mounts: { '/data': drive },
   });
-  try { return await run(sandbox); } finally { await sandbox.stop(); }
+  try { return await run(sandbox); } catch (error) { tagSandbox(error, sandbox.name); throw error; } finally { await sandbox.stop(); }
 }
 
 /** No arbitrary command or environment comes from an HTTP request. */
@@ -42,5 +43,5 @@ export async function runPublisherCommand(args: string[]): Promise<{ exitCode: n
 
 export async function runSandboxWorker(): Promise<void> {
   const result = await runPublisherCommand(['--no-env-file', 'src/deployment/worker.ts']);
-  if (result.exitCode !== 0) throw new Error(`Sandbox worker exited with code ${result.exitCode}; inspect Sandbox logs`);
+  if (result.exitCode !== 0) throw Object.assign(new Error(`Sandbox worker exited with code ${result.exitCode}; inspect Sandbox logs`), { code: `worker_exit_${result.exitCode}` });
 }

@@ -4,6 +4,7 @@ import { buildServeHttpApp } from './commands/serve-http.ts';
 import { useExternalPersistenceConsumer } from './core/persistence/service.ts';
 import { deploymentEngine } from './deployment/engine.ts';
 import { assertDeploymentEnvironment, publicUrl, requiredEnv } from './deployment/config.ts';
+import { publicErrorHandler } from './deployment/error-log.ts';
 import { hasPendingPublication } from './deployment/pending.ts';
 import { runSandboxWorker } from './deployment/sandbox.ts';
 
@@ -39,19 +40,19 @@ app.get('/internal/drain', async (req, res) => {
   if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
     res.status(401).json({ error: 'unauthorized' }); return;
   }
+  res.locals.stage = 'drain.pending';
   const { engine } = await deploymentEngine();
   let pending: boolean;
   try { pending = await hasPendingPublication(engine); } finally { await engine.disconnect(); }
   if (!pending) { res.json({ status: 'idle' }); return; }
+  res.locals.stage = 'drain.worker';
   await runSandboxWorker();
   res.json({ status: 'completed' });
 });
 app.use(async (req, res, next) => {
+  res.locals.stage = 'api.initialize';
   ready ??= initialize().catch(error => { ready = undefined; throw error; });
   (await ready)(req, res, next);
 });
-app.use((_error: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  // Provider/DB errors may contain credentials; keep the public response generic.
-  if (!res.headersSent) res.status(503).json({ error: 'temporarily_unavailable' });
-});
+app.use(publicErrorHandler());
 export default app;
