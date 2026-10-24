@@ -9,6 +9,7 @@
     "noEmit": true,
     "esModuleInterop": true,
     "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
