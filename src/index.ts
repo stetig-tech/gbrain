@@ -5,7 +5,7 @@ import { useExternalPersistenceConsumer } from './core/persistence/service.ts';
 import { deploymentEngine } from './deployment/engine.ts';
 import { assertDeploymentEnvironment, publicUrl, requiredEnv } from './deployment/config.ts';
 import { publicErrorHandler } from './deployment/error-log.ts';
-import { hasPendingPublication } from './deployment/pending.ts';
+import { gitPublicationHolds, hasPendingPublication } from './deployment/pending.ts';
 import { runSandboxWorker } from './deployment/sandbox.ts';
 
 const app = express();
@@ -33,9 +33,17 @@ async function initialize() {
     return api;
   } catch (error) { await engine.disconnect(); throw error; }
 }
-async function pendingPublication(): Promise<boolean> {
+async function publicationState() {
   const { engine } = await deploymentEngine();
-  try { return await hasPendingPublication(engine); } finally { await engine.disconnect(); }
+  try { return { pending: await hasPendingPublication(engine), holds: await gitPublicationHolds(engine) }; } finally { await engine.disconnect(); }
+}
+/** Held Git publication outranks an empty or drained backlog: those writes have not reached the remote. */
+function reportDrain(res: express.Response, { pending, holds }: Awaited<ReturnType<typeof publicationState>>, ran: boolean) {
+  const git_held = holds.reduce((sum, hold) => sum + hold.failed, 0);
+  if (holds.length) console.warn(JSON.stringify({ event: 'gbrain_git_held', holds, fix: 'gbrain sources writer retry-effects <source> --parked-pushes --dry-run' }));
+  if (pending && ran) { res.status(202).json({ status: 'backlog_remaining', git_held }); return; }
+  if (git_held) { res.json({ status: 'git_held', git_held }); return; }
+  res.json({ status: ran ? 'completed' : 'idle', git_held });
 }
 app.get('/internal/drain', async (req, res) => {
   assertDeploymentEnvironment();
@@ -45,13 +53,13 @@ app.get('/internal/drain', async (req, res) => {
     res.status(401).json({ error: 'unauthorized' }); return;
   }
   res.locals.stage = 'drain.pending';
-  if (!await pendingPublication()) { res.json({ status: 'idle' }); return; }
+  const before = await publicationState();
+  if (!before.pending) { reportDrain(res, before, false); return; }
   res.locals.stage = 'drain.worker';
   await runSandboxWorker();
   res.locals.stage = 'drain.recheck';
   // The worker exits cleanly on its deadline or on SIGTERM with work left; that is not a completed drain.
-  if (await pendingPublication()) { res.status(202).json({ status: 'backlog_remaining' }); return; }
-  res.json({ status: 'completed' });
+  reportDrain(res, await publicationState(), true);
 });
 app.use(async (req, res, next) => {
   res.locals.stage = 'api.initialize';
