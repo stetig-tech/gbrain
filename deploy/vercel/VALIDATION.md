@@ -46,11 +46,41 @@ pooler (`GBRAIN_DIRECT_DATABASE_URL`), a drain reporting `completed` with work
 left, held Git publication reported as idle, and errors leaving no evidence (safe
 structured log).
 
+Embedding model choice, 2026-10-24 (directional, n=30):
+
+- Corpus: the 92 knowledge pages of the preview brain (232 live chunks; smoke
+  pages excluded), embedded as GBrain does for `contextual_retrieval_mode=title`
+  (its own title wrapper). Vectors were kept in a local scratch cache only.
+- Queries: 30, with relevant pages fixed before any ranking: 17 Russian (mostly
+  against English pages), 13 English, 4 containing identifiers. Page-level
+  cosine ranking, all models at 1536 dimensions, all through AI Gateway.
+
+| Model | Hit@5 | MRR@10 | Query embed p50 / p90 |
+|---|---|---|---|
+| `openai/text-embedding-3-small` | 29/30 | 0.771 | 449 / 610 ms |
+| `google/gemini-embedding-001` | 29/30 | 0.903 | 958 / 1050 ms |
+| `google/gemini-embedding-001`, Vertex task types | 29/30 | 0.892 | 1001 / 1144 ms |
+| `google/gemini-embedding-2` | 27/30 | 0.904 | 360 / 413 ms |
+
+- Rule: at most one extra top-5 miss and MRR within ~5 points of the OpenAI
+  baseline counts as a tie; on a tie Gemini is preferred. Gemini-001 met it
+  (same hits, higher MRR); Gemini-2 did not (two extra misses); task types
+  gave no gain and would need code. Chosen: `litellm:google/gemini-embedding-001`
+  at 1536 through `https://ai-gateway.vercel.sh/v1`, no task type.
+- Gemini-001's only miss is a bare identifier (`DE/RA/…`, rank 18); the
+  configured keyword search returns that page first.
+- Cost: Gateway metadata reported $0.0034 for the OpenAI corpus (171k tokens)
+  and $0 for Gemini (205k tokens). The Gemini figure is not taken as free:
+  at the catalog price ($0.15 per 1M input tokens) it is an estimated $0.03.
+- Preview brain before migration: config `voyage:voyage-4`, 1024d columns, no
+  stored vectors; `migrate embeddings --to litellm:google/gemini-embedding-001
+  --dim 1536 --dry-run` in the Sandbox plans 263 chunks, estimate $0.02,
+  worst case $0.07.
+
 Not yet validated:
 
-- Embeddings: no `OPENAI_API_KEY` yet. Existing pages record the embedding effect
-  as skipped (`embedding_unconfigured`); after the key, run the supported
-  backfill and check vector retrieval and stale-embedding completion.
+- Embeddings: migration apply, backfill, semantic retrieval through the
+  configured search path and stale-embedding completion.
 - Production deployment, custom domain (Deployment Protection), Cron.
 - Confidential OAuth client registration (`serve-http-auth-outcomes.test.ts`
   5 passed / 6 failed, identical on the base commit); scoped bearer MCP is the

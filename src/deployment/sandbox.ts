@@ -1,4 +1,5 @@
 import { Drive, Sandbox } from '@vercel/sandbox';
+import { gatewayBearer } from './ai-gateway.ts';
 import { requiredEnv } from './config.ts';
 import { tagSandbox } from './error-log.ts';
 import { BUN_BIN, RELEASE_MANIFEST, assertReleaseManifest, expectedReleaseSha, releaseDir } from './release.ts';
@@ -33,9 +34,11 @@ export async function runPublisherCommand(args: string[]): Promise<{ exitCode: n
       GBRAIN_POOL_SIZE: '4', GBRAIN_PREPARE: 'false',
       GIT_TERMINAL_PROMPT: '0', PATH: `${BUN_BIN.slice(0, -'/bun'.length)}:/usr/local/bin:/usr/bin:/bin`,
     };
-    for (const key of ['GBRAIN_EMBEDDING_MODEL', 'GBRAIN_EMBEDDING_DIMENSIONS', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'AI_GATEWAY_API_KEY', 'LITELLM_BASE_URL', 'LITELLM_API_KEY', 'GBRAIN_GIT_TOKEN']) {
+    for (const key of ['GBRAIN_EMBEDDING_MODEL', 'GBRAIN_EMBEDDING_DIMENSIONS', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'AI_GATEWAY_API_KEY', 'LITELLM_BASE_URL', 'GBRAIN_GIT_TOKEN']) {
       if (process.env[key]) env[key] = process.env[key]!;
     }
+    // Only this run's process env carries the token: it expires, so it never reaches the Drive.
+    if (env.LITELLM_BASE_URL) env.LITELLM_API_KEY = await gatewayBearer();
     const command = await sandbox.runCommand({ cmd: BUN_BIN, args, cwd, env, sudo: true });
     return { exitCode: command.exitCode, stdout: await command.stdout(), stderr: await command.stderr() };
   });

@@ -21,6 +21,7 @@
  *     rotation (via configureGateway()) invalidates stale entries.
  */
 
+import { setRequestBearer, withRequestBearer } from './request-bearer.ts';
 import type { embedMany, generateObject, generateText, JSONSchema7, Output } from 'ai';
 import { jsonSchema } from '@ai-sdk/provider-utils';
 import { installAiSdkWarningWriter } from './sdk-warnings.ts';
@@ -711,6 +712,7 @@ export function __setGatewayResetBaselineForTests(
 /** Clear every piece of module state. Shared by both reset flavors. */
 function clearGatewayState(): void {
   _config = null;
+  setRequestBearer(undefined);
   _discoveryEngine = null;
   _discovery = null;
   clearGatewayModelSources();
@@ -1506,7 +1508,7 @@ function instantiateEmbedding(recipe: Recipe, modelId: string, cfg: AIGatewayCon
       const client = createOpenAICompatible({
         name: recipe.id,
         baseURL: compat.baseURL,
-        ...(fetchWrapper ? { fetch: fetchWrapper } : {}),
+        fetch: withRequestBearer(recipe.id, fetchWrapper),
         ...auth,
       });
       return client.textEmbeddingModel(modelId);

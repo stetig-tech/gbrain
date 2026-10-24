@@ -56,8 +56,11 @@ stops when the journal is empty or after 210 seconds of processing; shutdown has
 4. Set environment variables using `deploy/vercel/.env.example` as the checklist.
    Set embedding model/dimensions consistently before initializing the schema.
    Embeddings call Vercel AI Gateway directly: gbrain's OpenAI-compatible
-   `litellm` recipe with `LITELLM_BASE_URL=https://ai-gateway.vercel.sh/v1` and a
-   dedicated AI Gateway API key in `LITELLM_API_KEY`; no LiteLLM service runs.
+   `litellm` recipe with `LITELLM_BASE_URL=https://ai-gateway.vercel.sh/v1`; no
+   LiteLLM service runs. The deployment authenticates with its own OIDC token,
+   read per call in the Function and handed to each Sandbox run in its process env
+   only (it expires, so it never reaches the Drive). No Gateway key is stored in
+   the project; `LITELLM_API_KEY`, when set, overrides the token.
    The Function, the Sandbox and local administration use the same
    `GBRAIN_EMBEDDING_MODEL`/`GBRAIN_EMBEDDING_DIMENSIONS`. A brain initialized
    with another model or width is moved with `gbrain migrate embeddings --to
