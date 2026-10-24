@@ -41,8 +41,9 @@ stops when the journal is empty or after 210 seconds of processing; shutdown has
 ## Create resources
 
 1. Create a **separate Vercel project** linked to this fork. Root directory is the
-   repository root; use the checked-in Express configuration. Keep automatic
-   production deployments disabled until the checks below pass.
+   repository root; use the checked-in Express configuration. `vercel.json`
+   keeps automatic production deployments from `main` off
+   (`git.deploymentEnabled.main: false`) until the checks below pass.
 2. Create a dedicated Neon database/branch near `fra1`, with `vector`, `pg_trgm`
    and `pgcrypto` available. Use the pooled URL for `GBRAIN_DATABASE_URL` and the
    direct URL for `GBRAIN_WORKER_DATABASE_URL`. Do not reuse ATIS application
