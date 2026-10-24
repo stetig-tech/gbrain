@@ -15,6 +15,7 @@
  * is re-exported below.
  */
 
+import { mountServeHttpRoutes } from './serve-http-routes.ts';
 import { listenOrRefuse, type AdoptableServer } from './serve-http-listen.ts';
 import express from 'express';
 import type { Socket } from 'net';
@@ -22,17 +23,14 @@ import type { Request, RequestHandler, CookieOptions } from 'express';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
 import { randomBytes, createHash } from 'crypto';
-import { createMetricsCounters, metricsTrackingMiddleware, mountHealth, mountMetrics, type MetricsCounters } from './serve-http-metrics.ts';
+import { createMetricsCounters, metricsTrackingMiddleware, type MetricsCounters } from './serve-http-metrics.ts';
 import { ADMIN_TOKEN_SHAPE } from '../core/serve-service.ts';
 import { getOAuthProtectedResourceMetadataUrl } from '@modelcontextprotocol/sdk/server/auth/router.js';
 import { InvalidTokenError } from '@modelcontextprotocol/sdk/server/auth/errors.js';
 import type { OAuthTokenVerifier } from '@modelcontextprotocol/sdk/server/auth/provider.js';
 import { createAdminLimiters } from './serve-http-admin-limits.ts';
-import { mountOAuth, mountOAuthConsent, mountOwnerLoginLinks } from './serve-http-oauth.ts';
-import { createRequireAdmin, mountAdminApi, mountAdminLogin } from './serve-http-admin-api.ts';
-import { mountSpa } from './serve-http-spa.ts';
-import { mountMcp } from './serve-http-mcp.ts';
-import { createWebhookLimiters, mountWebhooks } from './serve-http-webhooks.ts';
+import { createRequireAdmin } from './serve-http-admin-api.ts';
+import { createWebhookLimiters } from './serve-http-webhooks.ts';
 import type { BrainEngine } from '../core/engine.ts';
 import { operations, type Operation } from '../core/operations.ts';
 import {
@@ -340,6 +338,8 @@ export function resolveTrustProxy(env: string | undefined): string | number | bo
 }
 
 interface ServeHttpOptions {
+  /** M2M MCP only: no process-local admin sessions, consent, webhooks or SPA. */
+  serverless?: boolean;
   port: number;
   tokenTtl: number;
   enableDcr: boolean;
@@ -825,16 +825,7 @@ export async function buildServeHttpApp(app: express.Express, engine: BrainEngin
     metricsCounters, sseClients, broadcastEvent,
   };
 
-  mountOAuth(app, ctx);
-  mountHealth(app, ctx);
-  mountAdminLogin(app, ctx);
-  mountOwnerLoginLinks(app, ctx);
-  mountOAuthConsent(app, oauthProvider, requireAdmin, adminLimits.consent);
-  mountMetrics(app, ctx);
-  mountAdminApi(app, ctx);
-  await mountSpa(app, ctx);
-  mountMcp(app, ctx);
-  mountWebhooks(app, ctx);
+  await mountServeHttpRoutes(app, ctx, options.serverless);
 
   return { bind, config, sql, issuerUrl, skillStatus, bootstrapToken, bootstrapFromEnv, suppressBootstrapPrint };
 }

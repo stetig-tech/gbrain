@@ -4,7 +4,7 @@
 //
 // The git-show source is injected via the documented test seam
 // COVERAGE_BASELINE_JSON_OVERRIDE (literal JSON; sentinels ABSENT_ON_MASTER
-// and GIT_FAILURE), so tests never depend on the real origin/master.
+// and GIT_FAILURE), so tests never depend on the real origin/main.
 
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

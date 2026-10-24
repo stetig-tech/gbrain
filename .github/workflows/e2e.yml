@@ -2,7 +2,7 @@ name: E2E Tests
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   # Merge queue (inert until the queue is enabled on master): the PR profile.
   # prepare-e2e classifies the queued change from the compare API (base_sha...
   # head_sha). docs/RELEASING.md#merge-queue.
@@ -33,7 +33,7 @@ permissions:
 # Cancel a superseded run when a newer commit lands on the same PR/branch.
 # PR number for pull_request events (fork-safe), github.ref fallback for
 # push runs. Scheduled runs get their own `-nightly` group (as in test.yml):
-# sharing refs/heads/master with push runs let the next merge cancel the
+# sharing refs/heads/main with push runs let the next merge cancel the
 # nightly full corpus mid-shard (#6040).
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}${{ github.event_name == 'workflow_dispatch' && inputs.full_corpus && '-full-corpus' || '' }}${{ github.event_name == 'schedule' && '-nightly' || '' }}
@@ -51,7 +51,7 @@ jobs:
     name: JSONB parity (#2339 regression guard)
     needs: [prepare-e2e]
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' }}
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 15
     services:
       postgres:
@@ -142,7 +142,7 @@ jobs:
   # changed files come from the GitHub API, so the checkout stays shallow; an
   # incomplete list fails closed to the whole corpus.
   prepare-e2e:
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 5
     permissions:
       contents: read
@@ -219,7 +219,7 @@ jobs:
     # 2 vCPUs, up to 8 shards (C1): run-e2e.sh runs one bun process at a time,
     # and a 25-file sample took 442s on 2 cores vs 455s on 4.
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' }}
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 60
     services:
       postgres:
@@ -302,7 +302,7 @@ jobs:
     # (measured September 29, 2026), while every other E2E lane ran as fast.
     needs: [prepare-e2e]
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' }}
-    runs-on: ubicloud-standard-16-ubuntu-2404
+    runs-on: blacksmith-16vcpu-ubuntu-2404
     timeout-minutes: 70
     services:
       postgres:
@@ -483,7 +483,7 @@ jobs:
     name: Tier 1 backend matrix (direct + PgBouncer) ${{ matrix.shard }}/2
     needs: [prepare-e2e]
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' }}
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     # Two weighted shards: the whole matrix took 715s on one 4-vCPU runner
     # (the PR critical path); files run sequentially, so a split halves it.
     strategy:
@@ -584,7 +584,7 @@ jobs:
     name: Postgres 15 compatibility (#7112)
     needs: [prepare-e2e]
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' }}
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 20
     services:
       postgres:
@@ -668,7 +668,7 @@ jobs:
     # this job on every repository that never set the variable.
     needs: jsonb-parity
     if: format('{0}', vars.GBRAIN_PAID_LANES) != '0'
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     services:
       postgres:
@@ -789,7 +789,7 @@ jobs:
   # ──────────────────────────────────────────────────────────────────────
   coverage-full-unit:
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_corpus)
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -835,7 +835,7 @@ jobs:
   order-hunt:
     # Named exception: nightly E2E schedule and order_hunt dispatch only (docs/TESTING.md#event-parity).
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.order_hunt)
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 75
     strategy:
       fail-fast: false
@@ -899,7 +899,7 @@ jobs:
   coverage-full-serial:
     # Named exception: nightly E2E schedule only (docs/TESTING.md#event-parity).
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_corpus)
-    runs-on: ubicloud-standard-8-ubuntu-2404
+    runs-on: blacksmith-8vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
@@ -936,7 +936,7 @@ jobs:
   coverage-full-slow:
     # Named exception: nightly E2E schedule only (docs/TESTING.md#event-parity).
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_corpus)
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
@@ -974,7 +974,7 @@ jobs:
   coverage-full-e2e:
     # Named exception: nightly E2E schedule only (docs/TESTING.md#event-parity).
     if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_corpus)
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -1083,7 +1083,7 @@ jobs:
     needs: [coverage-full-unit, coverage-full-serial, coverage-full-slow, coverage-full-e2e]
     # Named exception: nightly E2E schedule only (docs/TESTING.md#event-parity).
     if: always() && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.full_corpus))
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     # actions + checks: the shard classifier reads this run's jobs and their annotations.
     permissions:
       contents: read
@@ -1093,7 +1093,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
-          fetch-depth: 0  # baseline gate reads git show origin/master:
+          fetch-depth: 0  # baseline gate reads git show origin/main:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2
         with:
           bun-version: 1.4.4
@@ -1155,7 +1155,7 @@ jobs:
   executed-receipts:
     needs: [prepare-e2e, jsonb-parity, tier1, tier1-backend-matrix, tier2, selected-e2e, coverage-full-unit, coverage-full-serial, coverage-full-e2e]
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' && always() }}
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
@@ -1213,7 +1213,7 @@ jobs:
   e2e-status:
     needs: [jsonb-parity, tier1, tier1-backend-matrix, postgres15-compat, tier2, prepare-e2e, selected-e2e, coverage-full-unit, coverage-full-serial, coverage-full-slow, coverage-full-e2e]
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' && always() }}
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 5
     steps:
       # The job results come in through env so test/paid-lanes-switch-5903.test.ts
@@ -1290,7 +1290,7 @@ jobs:
   e2e-full-suite:
     needs: [prepare-e2e, e2e-status]
     if: ${{ needs.prepare-e2e.outputs.reuse != 'true' && always() }}
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 5
     steps:
       - name: Require e2e-status
@@ -1327,7 +1327,7 @@ jobs:
   reused-full-suite:
     needs: [prepare-e2e]
     if: ${{ needs.prepare-e2e.outputs.reuse == 'true' }}
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 2
     steps:
       - env:

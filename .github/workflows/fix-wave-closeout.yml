@@ -11,7 +11,7 @@ name: Fix-wave closeout
 
 on:
   pull_request_target:
-    branches: [master]
+    branches: [main]
     types: [closed]
 
 permissions: {}
@@ -19,7 +19,7 @@ permissions: {}
 jobs:
   close-superseded:
     if: github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == 'garrytan/gbrain'
-    runs-on: ubicloud-standard-2-ubuntu-2404
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     permissions:
       contents: read

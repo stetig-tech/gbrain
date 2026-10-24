@@ -135,3 +135,7 @@ Current behavior and load-bearing invariants; history belongs in Git and CHANGEL
 - `src/schema.sql` — Full Postgres + pgvector DDL: canonical for every table except the TS fragment tables, whose `BEGIN/END GENERATED` regions are rewritten from the fragment modules; `bun run build:schema` derives schema-embedded.generated.ts and the PGLite template from it (`docs/ENGINES.md#canonical-schema-sources`)
 
 - `templates/` — SOUL.md, USER.md, ACCESS_POLICY.md, HEARTBEAT.md templates
+
+- `src/index.ts`, `src/deployment/{config,engine,pending,sandbox,worker}.ts` — Vercel Express entry and bounded Sandbox publisher. API pools are independent, managed persistence must already be active, migrations never run on cold start, and previews require explicit isolated configuration. Cron checks durable work before mounting the pre-provisioned Drive. See `deploy/vercel/README.md`.
+
+- `src/core/persistence/external-consumer.ts` — explicitly selected per-engine admission mode: no election, timers, claims or publication lane. Shared journal waiters obtain receipts from the separate publisher.
