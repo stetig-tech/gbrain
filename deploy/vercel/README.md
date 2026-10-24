@@ -194,6 +194,22 @@ smoke check alone does not validate Vercel packaging or platform limits.
 
 Monitor Cron failures, old queued requests, failed/recovering receipts and Git
 outbox outcomes. A blocked write may need operator action, not endless retries.
+
+`/internal/drain` answers `idle`, `completed`, `202 backlog_remaining` (the worker
+stopped with work left; the next run resumes) or `git_held` with a count. An empty
+backlog is not proof of publication: a Git effect parked after repeated push
+failures runs again only on request. The drain logs `gbrain_git_held` with the
+per-source holds; alert on it. Fix the cause (for example the token), then:
+
+```sh
+brain sources writer retry-effects default --parked-pushes --dry-run --json
+brain sources writer retry-effects default --parked-pushes --json
+```
+
+and invoke the drain; it should answer `completed` with `git_held: 0`. Failed
+requests log `gbrain_error` with a `correlation_id` returned to the caller, the
+stage and the provider code (for example `drive_attached` for a drain that lost
+the single Drive mount to a concurrent one).
 `brain sources writer status --probe --json` is the first diagnostic. Back up
 **both Neon and the Drive**; Git alone omits database-only and operational state.
 On rollback, stop admissions/cron first, preserve the Drive, and use a code release (already on the Drive) and image
