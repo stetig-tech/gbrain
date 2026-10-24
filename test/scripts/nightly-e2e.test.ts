@@ -199,7 +199,7 @@ describe('full E2E shard classification (#6040)', () => {
   const run = { repo: 'acme-example/brain', runId: '42', attempt: '1', serverUrl: 'https://example.test' };
   // Annotation texts recorded from real runs: 37273083933 (cancelled by a
   // newer push, concurrency) and 37371914954 (cancelled by a user).
-  const CONCURRENCY = 'Canceling since a higher priority waiting request for E2E Tests-refs/heads/master exists';
+  const CONCURRENCY = 'Canceling since a higher priority waiting request for E2E Tests-refs/heads/main exists';
   const USER = 'The run was canceled by @capy-ai[bot].';
   const TIMEOUT = 'The job running on runner ubicloud-runner-1 has exceeded the maximum execution time of 60 minutes.';
   const OP = 'The operation was canceled.';

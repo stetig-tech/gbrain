@@ -11,7 +11,7 @@ name: Fix-wave closeout
 
 on:
   pull_request_target:
-    branches: [master]
+    branches: [main]
     types: [closed]
 
 permissions: {}

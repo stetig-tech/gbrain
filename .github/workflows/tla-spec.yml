@@ -6,7 +6,7 @@ name: TLA+ specs
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
     # Event parity (docs/ci-event-parity.md): path-gated named exception; covered by the nightly TLA+ specs schedule.
     paths:
       - 'spec/tla/**'
@@ -32,7 +32,7 @@ on:
       - 'test/helpers/test-backends.ts'
       - 'test/helpers/persistence-postgres.ts'
   push:
-    branches: [master]
+    branches: [main]
     paths:  # the same list as pull_request (actionlint does not accept YAML aliases)
       - 'spec/tla/**'
       - 'scripts/spec/**'

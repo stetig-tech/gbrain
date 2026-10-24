@@ -2,9 +2,9 @@ name: Test
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
   # Merge queue (inert until the queue is enabled on master): the PR profile,
   # run against the queued merge commit. docs/RELEASING.md#merge-queue.
   merge_group:
@@ -400,8 +400,8 @@ jobs:
         timeout-minutes: 8
         run: bun scripts/ci-bun-install.ts --frozen-lockfile
       # check:schema-migration-order compares new schema migrations with
-      # origin/master's latest version; a depth-1 fetch of the ref is enough.
-      - run: git fetch --no-tags --depth=1 origin +refs/heads/master:refs/remotes/origin/master
+      # origin/main's latest version; a depth-1 fetch of the ref is enough.
+      - run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
       # check:vendor-postgres rebuilds vendor/postgres from two pinned downloads (npm, GitHub). They are kept by content
       # hash, so a transient outage cannot turn verify red; every file is hash-checked on use, so a mismatch still fails.
       - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684  # v4.2.3
@@ -695,7 +695,7 @@ jobs:
     # BrainBench memory-conformance gate (Cathedral 2). Hermetic: in-memory
     # PGLite, zero API keys, ~15s for the full 141-fixture × 3-harness run.
     # Governance (decision 4): compares HEAD's run against MAIN's committed
-    # baseline via `git show origin/master:evals/brainbench/baselines/main.json`
+    # baseline via `git show origin/main:evals/brainbench/baselines/main.json`
     # — a PR cannot rewrite the thing it's compared against. Exit 1 blocks the
     # merge until the regression is fixed or blessed (justification in the
     # updated baseline / fixture diff in corpus-bless mode).
@@ -703,10 +703,10 @@ jobs:
     timeout-minutes: 10  # ~15s hermetic run; matches the per-job-timeout hardening (#2254)
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
-      - name: Fetch origin/master baseline ref (shallow)
-        # The gate reads ONE file via `git show origin/master:...` — a depth-1
+      - name: Fetch origin/main baseline ref (shallow)
+        # The gate reads ONE file via `git show origin/main:...` — a depth-1
         # fetch of the master ref replaces the previous full 3700-commit clone.
-        run: git fetch --no-tags --depth=1 origin +refs/heads/master:refs/remotes/origin/master
+        run: git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2
         with:
           bun-version: 1.4.4
@@ -992,7 +992,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262  # v4
         with:
-          fetch-depth: 0  # diff gate needs origin/master; baseline gate reads git show origin/master:
+          fetch-depth: 0  # diff gate needs origin/main; baseline gate reads git show origin/main:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6  # v2
         with:
           bun-version: 1.4.4

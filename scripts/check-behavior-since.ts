@@ -12,13 +12,13 @@
  * notice. Any TBD row is refused when:
  *   - --stamped is passed (release:restamp after it rewrites the rows, the
  *     Release workflow before it publishes);
- *   - the run is on master (GITHUB_REF=refs/heads/master, or HEAD is the base
+ *   - the run is on master (GITHUB_REF=refs/heads/main, or HEAD is the base
  *     ref's commit), or the base ref itself carries a TBD row;
  *   - CHANGELOG.md has a release header for VERSION and VERSION differs from
  *     the base ref's VERSION (a stamped PR head, stamped by tool or by hand).
  * Otherwise VERSION equals the base's (an unstamped branch) and TBD rows pass.
  *
- * Base ref: $GBRAIN_RELEASE_BASE_REF, default origin/master. When it is
+ * Base ref: $GBRAIN_RELEASE_BASE_REF, default origin/main. When it is
  * unavailable the check fails under CI=true and skips locally.
  * Exit: 0 ok or skipped, 1 refused, 2 usage. Docs: docs/RELEASING.md#release-restamp
  */
@@ -71,16 +71,16 @@ export function main(argv: string[], opts: { cwd?: string; env?: Record<string, 
   };
 
   if (argv.includes('--stamped')) return refuse(`a tree being stamped or released (VERSION ${version})`);
-  if (env.GITHUB_REF === 'refs/heads/master') return refuse(`master (VERSION ${version})`);
+  if (env.GITHUB_REF === 'refs/heads/main') return refuse(`master (VERSION ${version})`);
 
-  const ref = env.GBRAIN_RELEASE_BASE_REF || 'origin/master';
+  const ref = env.GBRAIN_RELEASE_BASE_REF || 'origin/main';
   const baseCommit = git('rev-parse', '--verify', '-q', `${ref}^{commit}`);
   if (!baseCommit.ok) {
     const msg = `check-behavior-since: base ref ${ref} is not available (git fetch origin master)`;
     if (env.CI === 'true') {
       log(`FAIL: ${msg}`);
       log('Why:  without the base ref the check cannot tell an unstamped branch from a stamped one.');
-      log('Fix:  fetch it in the workflow (git fetch --no-tags --depth=1 origin +refs/heads/master:refs/remotes/origin/master)');
+      log('Fix:  fetch it in the workflow (git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main)');
       log(SEE);
       return 1;
     }

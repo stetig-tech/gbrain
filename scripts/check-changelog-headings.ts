@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 /**
- * check:changelog-headings — CHANGELOG.md keeps every release heading origin/master has.
+ * check:changelog-headings — CHANGELOG.md keeps every release heading origin/main has.
  *
  * A tool or agent that rewrites CHANGELOG.md from a partial read can cut the file
  * (a 42k-line changelog written back as its first few hundred lines). Every
  * `## [X]` heading on the base ref must still be in the working tree's file.
- * Base ref: $GBRAIN_CHANGELOG_BASE_REF, default origin/master; unavailable: fails
+ * Base ref: $GBRAIN_CHANGELOG_BASE_REF, default origin/main; unavailable: fails
  * under CI=true, skips locally. Exit 0 ok or skipped, 1 refused.
  * Docs: docs/RELEASING.md#release-restamp
  */
@@ -21,12 +21,12 @@ export function main(opts: { cwd?: string; env?: Record<string, string | undefin
   const root = opts.cwd ?? process.cwd();
   const env = opts.env ?? process.env;
   const log = opts.log ?? ((line: string) => console.log(line));
-  const ref = env.GBRAIN_CHANGELOG_BASE_REF || 'origin/master';
+  const ref = env.GBRAIN_CHANGELOG_BASE_REF || 'origin/main';
   const base = spawnSync('git', ['show', `${ref}:CHANGELOG.md`], { cwd: root, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
   if (base.status !== 0) {
     if (env.CI === 'true') {
       log(`FAIL: check-changelog-headings: cannot read ${ref}:CHANGELOG.md`);
-      log('Fix:  fetch the base ref (git fetch --no-tags --depth=1 origin +refs/heads/master:refs/remotes/origin/master)');
+      log('Fix:  fetch the base ref (git fetch --no-tags --depth=1 origin +refs/heads/main:refs/remotes/origin/main)');
       return 1;
     }
     log(`skip: check-changelog-headings: ${ref} is not available`);

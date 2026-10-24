@@ -4,7 +4,7 @@
  * refused on a stamped tree (VERSION has a CHANGELOG release header and differs
  * from the base ref's), on master, and under --stamped (release:restamp's drift
  * check and the Release workflow). release:restamp rewrites the rows first.
- * Fixtures are throwaway git repos; origin/master is a local ref.
+ * Fixtures are throwaway git repos; origin/main is a local ref.
  */
 import { afterAll, describe, expect, test } from 'bun:test';
 import { execFileSync } from 'node:child_process';
@@ -42,7 +42,7 @@ function commit(root: string, message: string): void {
   git(root, 'commit', '-q', '-m', message);
 }
 
-/** A repo whose origin/master is at 0.60.322.0 with only released rows, checked out on a feature branch. */
+/** A repo whose origin/main is at 0.60.322.0 with only released rows, checked out on a feature branch. */
 function repo(): string {
   const root = mkdtempSync(join(tmpdir(), 'gbrain-behavior-since-'));
   roots.push(root);
@@ -51,7 +51,7 @@ function repo(): string {
   git(root, 'config', 'user.name', 't');
   put(root, { VERSION: '0.60.322.0\n', 'CHANGELOG.md': changelog('0.60.322.0'), [NOTICE_FILE]: notice('0.60.321.0', '0.60.322.0') });
   commit(root, 'master');
-  git(root, 'update-ref', 'refs/remotes/origin/master', 'HEAD');
+  git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
   git(root, 'checkout', '-q', '-b', 'feature');
   return root;
 }
@@ -63,7 +63,7 @@ function run(root: string, argv: string[] = [], env: Record<string, string> = {}
 }
 
 describe('check:behavior-since', () => {
-  test('an unstamped branch (VERSION equals origin/master) may carry TBD rows', () => {
+  test('an unstamped branch (VERSION equals origin/main) may carry TBD rows', () => {
     const root = repo();
     put(root, { [NOTICE_FILE]: notice('0.60.321.0', '0.60.322.0', 'TBD') });
     commit(root, 'feature');
@@ -112,11 +112,11 @@ describe('check:behavior-since', () => {
     const root = repo();
     put(root, { [NOTICE_FILE]: notice('0.60.322.0', 'TBD') });
     commit(root, 'feature');
-    expect(run(root, [], { GITHUB_REF: 'refs/heads/master' }).code).toBe(1);
-    git(root, 'update-ref', 'refs/remotes/origin/master', 'HEAD');
+    expect(run(root, [], { GITHUB_REF: 'refs/heads/main' }).code).toBe(1);
+    git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
     const atBase = run(root);
     expect(atBase.code).toBe(1);
-    expect(atBase.out).toContain('the base ref origin/master itself');
+    expect(atBase.out).toContain('the base ref origin/main itself');
     put(root, { 'README.md': 'later\n' });
     commit(root, 'a branch off a master that ships TBD');
     const r = run(root);
@@ -128,7 +128,7 @@ describe('check:behavior-since', () => {
     const root = repo();
     put(root, { [NOTICE_FILE]: notice('0.60.322.0', 'TBD') });
     commit(root, 'feature');
-    git(root, 'update-ref', '-d', 'refs/remotes/origin/master');
+    git(root, 'update-ref', '-d', 'refs/remotes/origin/main');
     expect(run(root, [], { CI: 'true' }).code).toBe(1);
     const local = run(root);
     expect(local.code).toBe(0);

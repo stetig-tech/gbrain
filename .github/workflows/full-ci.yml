@@ -12,7 +12,7 @@ name: Full CI dispatch
 # merge-train requires the full-suite and e2e-full-suite checks on the exact head.
 on:
   pull_request:
-    branches: [master]
+    branches: [main]
     types: [labeled, synchronize, reopened]
 
 permissions: {}

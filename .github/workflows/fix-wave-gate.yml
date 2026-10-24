@@ -14,7 +14,7 @@ name: Fix-wave gate
 
 on:
   pull_request_target:
-    branches: [master]
+    branches: [main]
     types: [opened, edited, reopened, synchronize, labeled, unlabeled]
 
 permissions: {}

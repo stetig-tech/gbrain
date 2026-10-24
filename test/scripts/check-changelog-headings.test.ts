@@ -1,6 +1,6 @@
 /**
  * check:changelog-headings (scripts/check-changelog-headings.ts): a CHANGELOG.md
- * that drops any release heading origin/master has is refused; one that only adds
+ * that drops any release heading origin/main has is refused; one that only adds
  * an entry on top passes. Fixtures are throwaway git repos.
  */
 import { afterAll, describe, expect, test } from 'bun:test';
@@ -25,7 +25,7 @@ function repo(): string {
   writeFileSync(join(root, 'CHANGELOG.md'), changelog('0.60.322.0', '0.60.321.0', '0.60.46.0'));
   git(root, 'add', '-A');
   git(root, 'commit', '-q', '-m', 'master');
-  git(root, 'update-ref', 'refs/remotes/origin/master', 'HEAD');
+  git(root, 'update-ref', 'refs/remotes/origin/main', 'HEAD');
   return root;
 }
 
@@ -54,7 +54,7 @@ describe('check:changelog-headings', () => {
 
   test('without the base ref: refused under CI, skipped locally', () => {
     const root = repo();
-    git(root, 'update-ref', '-d', 'refs/remotes/origin/master');
+    git(root, 'update-ref', '-d', 'refs/remotes/origin/main');
     expect(run(root, { CI: 'true' }).code).toBe(1);
     expect(run(root).out).toContain('GBRAIN_CHECK_SKIPPED');
   });
