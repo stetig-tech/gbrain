@@ -25,8 +25,10 @@ export async function runPublisherCommand(args: string[]): Promise<{ exitCode: n
     // Code is never installed on demand: a missing or mismatched release fails before any publication.
     const manifest = await sandbox.runCommand({ cmd: 'cat', args: [`${cwd}/${RELEASE_MANIFEST}`], sudo: true });
     assertReleaseManifest(manifest.exitCode === 0 ? await manifest.stdout() : '', { sha, image: sandboxImage() });
+    const workerUrl = requiredEnv('GBRAIN_WORKER_DATABASE_URL');
+    // prepare=false alone reads as a transaction pooler; the explicit direct route keeps persistence off that lane.
     const env: Record<string, string> = {
-      GBRAIN_HOME: '/data', GBRAIN_DATABASE_URL: requiredEnv('GBRAIN_WORKER_DATABASE_URL'),
+      GBRAIN_HOME: '/data', GBRAIN_DATABASE_URL: workerUrl, GBRAIN_DIRECT_DATABASE_URL: workerUrl,
       GBRAIN_POOL_SIZE: '4', GBRAIN_PREPARE: 'false',
       GIT_TERMINAL_PROMPT: '0', PATH: `${BUN_BIN.slice(0, -'/bun'.length)}:/usr/local/bin:/usr/bin:/bin`,
     };
