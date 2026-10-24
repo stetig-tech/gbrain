@@ -133,6 +133,9 @@ function main() {
   } else {
     entries = [
       'src/cli.ts',
+      // Vercel discovers the Express entry; the Sandbox image invokes its finite worker.
+      'src/index.ts',
+      'src/deployment/worker.ts',
       'src/mcp/server.ts',
       'src/openclaw-context-engine.ts',
       'src/admin-embedded.ts',

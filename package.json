@@ -209,6 +209,7 @@
     "@jsquash/avif": "^2.1.1",
     "@jsquash/png": "^3.1.1",
     "@modelcontextprotocol/sdk": "1.32.1",
+    "@vercel/sandbox": "3.9.0",
     "ai": "^6.0.168",
     "chokidar": "^4.0.3",
     "cookie-parser": "^1.4.7",

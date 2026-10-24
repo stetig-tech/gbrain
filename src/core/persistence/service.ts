@@ -1,3 +1,4 @@
+import { ExternalPersistenceConsumer } from './external-consumer.ts';
 import { PENDING_IMPORT, pendingImportRefusal } from './pending-import.ts';
 import type { BrainEngine } from '../engine.ts';
 import type { GBrainConfig } from '../config.ts';
@@ -30,6 +31,12 @@ import { registerPersistenceConsumerConfig } from '../embedding-disabled.ts';
 
 interface Service { consumer: PersistenceConsumerLike; heartbeat?: ConsumerHeartbeat; stopping: boolean; unregisterStop?: () => void; unregisterReopen?: () => void; }
 const services = new WeakMap<BrainEngine, Service>();
+const externalConsumers = new WeakSet<BrainEngine>();
+/** Serverless admission hosts must never elect themselves as filesystem publishers. */
+export function useExternalPersistenceConsumer(engine: BrainEngine): void {
+  if (services.has(engine)) throw new Error('Configure external persistence before starting a consumer');
+  externalConsumers.add(engine);
+}
 type ProgressRead = { row: WriteRequestProgress | null } | { error: unknown } | { cancelled: true };
 const receiptReads = new WeakMap<BrainEngine, Map<string, { read: Promise<ProgressRead>; abort: AbortController }>>();
 const settledWaiters = new WeakMap<BrainEngine, Map<string, Set<(row: WriteRequest) => void>>>();
@@ -126,6 +133,11 @@ export function startPersistenceConsumer(engine: BrainEngine, config: GBrainConf
         'The persistence owner in this process is shutting down; start the command again after it exits. Accepted writes stay journaled and resume on the next owner.');
     }
     return prior.consumer;
+  }
+  if (externalConsumers.has(engine)) {
+    const consumer = new ExternalPersistenceConsumer(engine, config);
+    services.set(engine, { consumer, stopping: false });
+    return consumer;
   }
   noteDirectPoolLease();
   const kind = claimOwnerKind();

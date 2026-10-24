@@ -1,0 +1,10 @@
+.git
+node_modules
+.env
+.env.*
+!.env.example
+.vercel
+admin/node_modules
+bin
+reports
+*.log
