@@ -33,6 +33,10 @@ async function initialize() {
     return api;
   } catch (error) { await engine.disconnect(); throw error; }
 }
+async function pendingPublication(): Promise<boolean> {
+  const { engine } = await deploymentEngine();
+  try { return await hasPendingPublication(engine); } finally { await engine.disconnect(); }
+}
 app.get('/internal/drain', async (req, res) => {
   assertDeploymentEnvironment();
   const expected = Buffer.from(`Bearer ${requiredEnv('CRON_SECRET')}`);
@@ -41,12 +45,12 @@ app.get('/internal/drain', async (req, res) => {
     res.status(401).json({ error: 'unauthorized' }); return;
   }
   res.locals.stage = 'drain.pending';
-  const { engine } = await deploymentEngine();
-  let pending: boolean;
-  try { pending = await hasPendingPublication(engine); } finally { await engine.disconnect(); }
-  if (!pending) { res.json({ status: 'idle' }); return; }
+  if (!await pendingPublication()) { res.json({ status: 'idle' }); return; }
   res.locals.stage = 'drain.worker';
   await runSandboxWorker();
+  res.locals.stage = 'drain.recheck';
+  // The worker exits cleanly on its deadline or on SIGTERM with work left; that is not a completed drain.
+  if (await pendingPublication()) { res.status(202).json({ status: 'backlog_remaining' }); return; }
   res.json({ status: 'completed' });
 });
 app.use(async (req, res, next) => {
