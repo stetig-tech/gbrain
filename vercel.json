@@ -3,8 +3,7 @@
   "framework": "express",
   "bunVersion": "1.4.x",
   "installCommand": "bun install --frozen-lockfile",
-  "buildCommand": "",
+  "buildCommand": "true",
   "regions": ["fra1"],
-  "functions": { "src/index.ts": { "maxDuration": 300 } },
   "crons": [{ "path": "/internal/drain", "schedule": "*/5 * * * *" }]
 }
