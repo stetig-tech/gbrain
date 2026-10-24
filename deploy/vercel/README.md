@@ -55,6 +55,13 @@ stops when the journal is empty or after 210 seconds of processing; shutdown has
    the Function and the publisher always run the same commit.
 4. Set environment variables using `deploy/vercel/.env.example` as the checklist.
    Set embedding model/dimensions consistently before initializing the schema.
+   Embeddings call Vercel AI Gateway directly: gbrain's OpenAI-compatible
+   `litellm` recipe with `LITELLM_BASE_URL=https://ai-gateway.vercel.sh/v1` and a
+   dedicated AI Gateway API key in `LITELLM_API_KEY`; no LiteLLM service runs.
+   The Function, the Sandbox and local administration use the same
+   `GBRAIN_EMBEDDING_MODEL`/`GBRAIN_EMBEDDING_DIMENSIONS`. A brain initialized
+   with another model or width is moved with `gbrain migrate embeddings --to
+   <model> --dim <n> --dry-run`, then without `--dry-run`.
    `GBRAIN_GIT_TOKEN` is a fine-grained GitHub token scoped to the **knowledge**
    repository with contents read/write. This is separate from the GBrain code
    fork. The canonical knowledge repository must have an initial commit and a
