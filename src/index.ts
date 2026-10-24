@@ -40,7 +40,9 @@ async function publicationState() {
 /** Held Git publication outranks an empty or drained backlog: those writes have not reached the remote. */
 function reportDrain(res: express.Response, { pending, holds }: Awaited<ReturnType<typeof publicationState>>, ran: boolean) {
   const git_held = holds.reduce((sum, hold) => sum + hold.failed, 0);
-  if (holds.length) console.warn(JSON.stringify({ event: 'gbrain_git_held', holds, fix: 'gbrain sources writer retry-effects <source> --parked-pushes --dry-run' }));
+  if (holds.length) console.warn(JSON.stringify({ event: 'gbrain_git_held', holds: holds.map(hold => ({
+    ...hold, fix: { argv: ['gbrain', 'sources', 'writer', 'retry-effects', hold.source_id, '--parked-pushes', '--dry-run'] },
+  })) }));
   if (pending && ran) { res.status(202).json({ status: 'backlog_remaining', git_held }); return; }
   if (git_held) { res.json({ status: 'git_held', git_held }); return; }
   res.json({ status: ran ? 'completed' : 'idle', git_held });
