@@ -1,0 +1,12 @@
+diff --git a/package.json b/package.json
+index 3d2315888db6ad74f0d857f3da8d804f473f4523..385f8eeab9e04864557a6a26cbf9ca2370302ee8 100644
+--- a/package.json
++++ b/package.json
+@@ -10,6 +10,7 @@
+         "require": "./dist/index.node.d.cts",
+         "import": "./dist/index.node.d.ts"
+       },
++      "bun": "./dist/index.node.js",
+       "browser": {
+         "types": "./dist/index.browser.d.ts",
+         "default": "./dist/index.browser.js"
