@@ -7,10 +7,7 @@ import { assertDeploymentEnvironment, publicUrl, requiredEnv } from './deploymen
 import { publicErrorHandler } from './deployment/error-log.ts';
 import { gitPublicationHolds, hasPendingPublication } from './deployment/pending.ts';
 import { runSandboxWorker } from './deployment/sandbox.ts';
-import { gatewayBearer } from './deployment/ai-gateway.ts';
-import { buildGatewayConfig } from './core/ai/build-gateway-config.ts';
-import { configureGateway, reconfigureGatewayWithEngine } from './core/ai/gateway.ts';
-import { setRequestBearer } from './core/ai/request-bearer.ts';
+import { configureDeploymentGateway } from './deployment/ai-gateway.ts';
 
 const app = express();
 app.disable('x-powered-by');
@@ -25,10 +22,7 @@ async function initialize() {
   const { engine, config } = await deploymentEngine();
   useExternalPersistenceConsumer(engine);
   try {
-    // A warm Function outlives an OIDC token, so the Gateway bearer is resolved per call, in that request's context.
-    setRequestBearer({ recipeId: 'litellm', token: gatewayBearer });
-    configureGateway(buildGatewayConfig(config));
-    await reconfigureGatewayWithEngine(engine);
+    await configureDeploymentGateway(engine, config);
     const api = express();
     await buildServeHttpApp(api, engine, {
       port: 3000, tokenTtl: 3600, enableDcr: false, publicUrl: origin,

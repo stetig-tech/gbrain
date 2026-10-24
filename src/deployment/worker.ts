@@ -1,6 +1,7 @@
 import { hasPendingPublication } from './pending.ts';
 import { existsSync } from 'node:fs';
 import { deploymentEngine } from './engine.ts';
+import { configureDeploymentGateway } from './ai-gateway.ts';
 import { startPersistenceConsumer, stopPersistenceConsumer } from '../core/persistence/service.ts';
 
 // Provisioning creates the checkout, owner identity and source bindings on this same Drive.
@@ -9,6 +10,7 @@ if (process.env.GBRAIN_HOME !== '/data' || !existsSync('/data/.gbrain/persistenc
 }
 const { engine, config } = await deploymentEngine();
 try {
+  await configureDeploymentGateway(engine, config);
   const consumer = startPersistenceConsumer(engine, config);
   // Stop on an empty durable backlog; a later admission is picked up by the next Cron.
   const deadline = Date.now() + 210_000;
