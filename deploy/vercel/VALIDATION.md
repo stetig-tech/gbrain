@@ -85,21 +85,23 @@ Embeddings on preview, release `b60f540cf`:
 - Apply: `migrate embeddings --to litellm:google/gemini-embedding-001 --dim 1536
   --yes --max-cost-usd 0.10` (0 vectors stored before it). 263/263 chunks
   embedded at 1536d, all four vector columns rebuilt, smoke self-retrieval pass,
-  $0.031 debited against the cap (gbrain's estimate). `--status`: 0 missing.
+  `--status`: 0 missing. Spend: $0.031 by gbrain's estimate against the cap, not
+  yet reconciled (Vercel billing data ended 2026-10-24 07:00 UTC, before the run).
 - Vectors are not unit length (norm 0.69–0.70, Gemini below 3072d); the HNSW
   index is `vector_cosine_ops`, so ranking is scale-free.
 - The Function configures the gateway at boot and reads the bearer per call: a
   Russian query with no keyword overlap (before the backfill: 0 results) now
   returns the English trucking pages as `weak_semantic` hits through MCP `query`.
-- A new `put_page` after the migration was published by the drain with its chunk
-  unembedded; `embed --stale --max-usd 0.01` in the Sandbox completed it.
+- New writes, release `34c33ae8d`: a `put_page` then drain committed the page's
+  embedding effect through the durable consumer and stored its vector. Before the
+  fix the worker started the consumer without a gateway, so each embedding effect
+  was settled as `skipped`/`embedding_unconfigured` (32 such effects, all from
+  writes before the fix). Their pages have vectors now: the migration covered all
+  but the last, and `embed --stale --max-usd 0.01` covered that one.
 
 Not yet validated:
 
-- Automatic stale-embedding completion: the drain publishes writes but does not
-  embed them; until a capped `embed --stale` runs on a schedule, new pages are
-  keyword-only.
-- Gateway billing reconciliation against the dashboard.
+- Gateway billing reconciliation for the migration run.
 - Production deployment, custom domain (Deployment Protection), Cron.
 - Confidential OAuth client registration (`serve-http-auth-outcomes.test.ts`
   5 passed / 6 failed, identical on the base commit); scoped bearer MCP is the
