@@ -30,7 +30,7 @@ concurrency:
 jobs:
   convergence:
     name: Convergence nightly / Bun ${{ matrix.bun }} / seed ${{ inputs.seed || github.run_id }}
-    runs-on: ubicloud-standard-4-ubuntu-2404
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 330
     strategy:
       fail-fast: false

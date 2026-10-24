@@ -10,13 +10,13 @@ type Job = {
 };
 const root = join(import.meta.dir, '../..');
 const load = (name: string) => loadYaml(readFileSync(join(root, '.github/workflows', name), 'utf8')) as { jobs: Record<string, Job> };
-const normal = 'ubicloud-standard-16-ubuntu-2404';
-const heavy = 'ubicloud-standard-30-ubuntu-2404';
-const small = 'ubicloud-standard-2-ubuntu-2404';
-const report = 'ubicloud-standard-4-ubuntu-2404';
+const normal = 'blacksmith-16vcpu-ubuntu-2404';
+const heavy = 'blacksmith-32vcpu-ubuntu-2404';
+const small = 'blacksmith-2vcpu-ubuntu-2404';
+const report = 'blacksmith-4vcpu-ubuntu-2404';
 const single = report;
-const pooled = 'ubicloud-standard-8-ubuntu-2404';
-const arm = 'ubicloud-standard-4-arm-ubuntu-2404';
+const pooled = 'blacksmith-8vcpu-ubuntu-2404';
+const arm = 'blacksmith-4vcpu-ubuntu-2404-arm';
 const targetRunners = (job: Job) =>
   JSON.parse(/fromJSON\('([^']+)'\)\[matrix\.target\]/.exec(job['runs-on']!)![1]!) as Record<string, string>;
 
@@ -26,7 +26,7 @@ describe('CI runner routing', () => {
       for (const job of Object.values(load(file).jobs)) {
         const runner = job['runs-on'];
         if (!runner || runner.startsWith('${{')) continue;
-        expect(runner, file).toMatch(/^ubicloud-standard-(2|4|8|16|30)-ubuntu-2404$/);
+        expect(runner, file).toMatch(/^blacksmith-(2|4|8|16|32)vcpu-ubuntu-2404$/);
       }
     }
     const release = readFileSync(join(root, '.github/workflows/release.yml'), 'utf8');
