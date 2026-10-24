@@ -15,4 +15,4 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run typecheck
       - run: bun --no-env-file test test/vercel-external-consumer.test.ts test/vercel-http.test.ts
-      - run: docker build -f deploy/vercel/Dockerfile -t gbrain-sandbox:check .
+      - run: bash -n deploy/vercel/install-release.sh

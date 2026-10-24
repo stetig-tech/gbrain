@@ -70,3 +70,4 @@ graphify-out/
 
 # Public Vercel deployment configuration template.
 !/deploy/vercel/.env.example
+.vercel

@@ -47,17 +47,12 @@ stops when the journal is empty or after 210 seconds of processing; shutdown has
    and `pgcrypto` available. Use the pooled URL for `GBRAIN_DATABASE_URL` and the
    direct URL for `GBRAIN_WORKER_DATABASE_URL`. Do not reuse ATIS application
    tables/schema. Runtime API instances use two connections; workers use four.
-3. Build the publisher image from the **same commit** as the Function:
-
-   ```sh
-   docker build --platform linux/amd64 -f deploy/vercel/Dockerfile -t YOUR_IMAGE .
-   docker push YOUR_IMAGE
-   ```
-
-   Set `GBRAIN_SANDBOX_IMAGE` to the pushed registry reference with `@sha256:…`.
-   Use a registry/image supported by Vercel Sandbox. Credentials are never baked
-   into the image. Native lock prebuilds and the vendored Postgres driver ship
-   with it. The Sandbox launcher explicitly runs Bun; it does not rely on CMD.
+3. The publisher runs on a Vercel Managed Image pinned by digest; no custom image
+   or registry is involved. Resolve the current digest of
+   `vercel/sandbox/universal` (a probe `Sandbox.create` reports it) and set
+   `GBRAIN_SANDBOX_IMAGE=vercel/sandbox/universal@sha256:…`. GBrain code and Bun
+   1.4.4 are installed onto the Drive per commit by an explicit step (below), so
+   the Function and the publisher always run the same commit.
 4. Set environment variables using `deploy/vercel/.env.example` as the checklist.
    Set embedding model/dimensions consistently before initializing the schema.
    `GBRAIN_GIT_TOKEN` is a fine-grained GitHub token scoped to the **knowledge**
@@ -83,18 +78,33 @@ and Git credential helper as the worker. They are explicit operator commands;
 HTTP callers cannot execute arbitrary commands. Do not run ownership commands
 from your laptop against the production database.
 
-Define a local helper (it passes arguments directly to Bun in the Sandbox):
+Define a local helper (it passes arguments directly to Bun in the Sandbox, inside
+`/data/app/<GBRAIN_RELEASE_SHA>`). Name the deployed commit explicitly; there is no
+branch or "latest" default:
 
 ```sh
+export GBRAIN_RELEASE_SHA=$(git rev-parse HEAD)   # must equal the deployment's commit
 publisher() { bun --env-file=.env.local scripts/vercel-admin.ts "$@"; }
-brain() { publisher --no-env-file /app/src/cli.ts "$@"; }
+brain() { publisher --no-env-file src/cli.ts "$@"; }
 ```
 
-Initialize the database and checkout:
+Install the release onto the Drive. It verifies Bun's release checksum, fetches
+exactly that commit, runs `bun install --frozen-lockfile`, smoke-tests native
+locks and writes `/data/app/<sha>/.gbrain-release.json` last. The worker refuses
+to run when that manifest is missing or names another commit, Bun or image; it
+never installs on demand. Install each new commit **before** its deployment
+receives Cron traffic. Older release directories stay for rollback.
 
 ```sh
-publisher --no-env-file /app/scripts/vercel-init-db.ts
-publisher --no-env-file /app/scripts/vercel-init-worktree.ts https://github.com/OWNER/KNOWLEDGE.git
+publisher --install-release
+```
+
+Initialize the database and checkout (preview: pass an isolated tracking branch
+as the second argument so verification never publishes to the live branch):
+
+```sh
+publisher --no-env-file scripts/vercel-init-db.ts
+publisher --no-env-file scripts/vercel-init-worktree.ts https://github.com/OWNER/KNOWLEDGE.git [BRANCH]
 brain sources set-path default /data/brain
 brain config set sync.repo_path /data/brain
 brain config set sync.write_through true
@@ -176,7 +186,7 @@ bun --no-env-file test test/vercel-external-consumer.test.ts test/vercel-http.te
 bun run verify
 ```
 
-`vercel-check.yml` additionally builds the Linux publisher image in GitHub CI.
+`vercel-check.yml` additionally syntax-checks the release installer in GitHub CI.
 Local tests cover transport/auth, absence of resident endpoints and admission
 versus publication. They do not substitute for a Neon/Vercel integration run.
 The Vercel framework build must also pass after linking the project; a Bun bundle
@@ -186,7 +196,7 @@ Monitor Cron failures, old queued requests, failed/recovering receipts and Git
 outbox outcomes. A blocked write may need operator action, not endless retries.
 `brain sources writer status --probe --json` is the first diagnostic. Back up
 **both Neon and the Drive**; Git alone omits database-only and operational state.
-On rollback, stop admissions/cron first, preserve the Drive, and use a code/image
+On rollback, stop admissions/cron first, preserve the Drive, and use a code release (already on the Drive) and image
 version compatible with the current schema and mutation protocol.
 
 Official platform references: [Bun Functions](https://vercel.com/docs/functions/runtimes/bun),
